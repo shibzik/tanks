@@ -34,6 +34,7 @@ h1 {
     float: left;
     padding: 14px 0 0;
     box-sizing: border-box;
+    -moz-box-sizing: border-box
 }
 
 .stone{

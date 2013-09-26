@@ -13,27 +13,27 @@ Field.prototype = {
     },
     create: function(options) {
         this.prop = $.extend({}, this.prop, options);
-        this.greed = createArray(this.prop.width, this.prop.height);
+        this.grid = createArray(this.prop.width, this.prop.height);
         for (var i = 0; i < this.prop.width; i++) {
             $(this.prop.container).append('<div class="row" id="row' + i + '"></div>');
             for (var j = 0; j < this.prop.height; j++) {
-                this.greed[i][j] = new Cell({X: i, Y: j});
-                this.greed[i][j].addOnField(this.greed);
-                $('#row' + i).append(this.greed[i][j].createHtml());
+                this.grid[i][j] = new Cell({X: i, Y: j});
+                this.grid[i][j].addOnField(this.grid);
+                $('#row' + i).append(this.grid[i][j].createHtml());
             }
         }
     },
-    getGreed: function() {
-        return this.greed;
+    getGrid: function() {
+        return this.grid;
     },
-    updateGreedCell: function(x, y, cellVal) {
+    updateGridCell: function(x, y, cellVal) {
 
     },
     // generate field X:Y with random numbers 1-26
     populate: function() {
         for (var i = 0; i < this.prop.width; i++) {
             for (var j = 0; j < this.prop.height; j++) {
-                this.greed[i][j].randomlyChangeContent();
+                this.grid[i][j].randomlyChangeContent();
             }
         }
     },
@@ -43,17 +43,17 @@ Field.prototype = {
         for (var i = 0; i < args.nrStones; i++) {
             coord = Cell.prototype.generateDistinctCoordinates(this.wall);
             this.wall[i] = numToID(coord[0], coord[1]);
-            this.greed[coord[0]][coord[1]].turnToStone();
+            this.grid[coord[0]][coord[1]].turnToStone();
         }
     },
     addTank: function(tankType) {
         var coord = Cell.prototype.generateDistinctCoordinates(this.wall);
-        if (!this.greed[coord[0]][coord[1]].isTank())
-            this.greed[coord[0]][coord[1]].turnToTank(tankType);
+        if (!this.grid[coord[0]][coord[1]].isTank())
+            this.grid[coord[0]][coord[1]].turnToTank(tankType);
         else
             this.addTank(tankType);
 
-        return this.greed[coord[0]][coord[1]];
+        return this.grid[coord[0]][coord[1]];
     }
 };
 
@@ -103,7 +103,6 @@ Cell.prototype = {
     },
     randomlyChangeContent: function(content) {
         this.prop.content = this.generateDistinctValue(this.prop.content);
-        console.log(this.prop.content);
 
         if (typeof content == 'undefined')
             content = this.prop.content;
