@@ -1,0 +1,53 @@
+body {
+    font-family: Arial;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #ccc;
+}
+
+h1 {
+    text-align: center
+}
+
+#field-control {
+    text-align: center;
+}
+
+#field {
+    width: 500px;
+    height: 500px;
+    border: 1px solid #333;
+    border-width: 1px 1px 0 0;
+    margin: 0 auto;
+}
+
+.cell{
+    background-color: #eee;
+    border: 1px solid #333;
+    border-width: 0 0 1px 1px;
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    display: table-cell;
+    vertical-align: middle;
+    float: left;
+    padding: 14px 0 0;
+    box-sizing: border-box;
+}
+
+.stone{
+    background-color: #444;
+}
+
+.tank {
+
+}
+
+.tank.friend{
+    background-color:#5882FA;
+}
+
+.tank.enemy{
+    background-color:#FF4000;
+}
