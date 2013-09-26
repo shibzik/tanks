@@ -35,9 +35,8 @@ Field.prototype = {
     },
     displayGrid: function() {
         for (var i = 0; i < this.W; i++) {
-            $(this.container).append('<div class="row" id="row' + i + '"></div>');
             for (var j = 0; j < this.H; j++) {
-                $('#row' + i).append("<div class='cell col" + j + "' data-coord='" + CoordToStr(i, j) + "'></div>");
+                $(this.container).append("<div class='cell row" + i + " col" + j + "' data-coord='" + CoordToStr(i, j) + "'></div>");
             }
         }
     },
@@ -67,8 +66,6 @@ var Cell = function(args) {
         X: -1,
         Y: -1,
         content: '',
-        type: '',
-        subtype: '',
         field: null
     };
     args = $.extend({}, _defaults, args);
@@ -76,41 +73,40 @@ var Cell = function(args) {
     this.field = args.field;
     this.X = args.X;
     this.Y = args.Y;
-    if (this.X == -1 || this.Y == -1) {
+    if (this.X === -1 || this.Y === -1) {
         this.X = getRandInt(0, this.field.W);
         this.Y = getRandInt(0, this.field.H);
     }
     this.content = args.content;
-    this.type = args.type;
-    this.subtype = args.subtype;
 };
 
 Cell.prototype = {
     constructor: Cell,
     turnToStone: function() {
         if (!this.isStone()) {
-            this.type = 'stone';
+            this.updateType('stone');
             this.updateContent('');
-            $(this.CSSid()).addClass('stone');
         }
     },
     turnToTank: function(tankType) {
         if (!this.isTank()) {
-            this.type = 'tank';
-            $(this.CSSid()).addClass('tank');
-            if (typeof tankType != 'undefined' && tankType != '') {
-                $(this.CSSid()).addClass(tankType);
-                this.subtype = tankType;
-            }
+            this.updateType('tank', tankType);
         }
     },
     CSSid: function() {
-        return '#row' + this.X + ' .col' + this.Y;
+        return '.row' + this.X + '.col' + this.Y;
     },
     randomlyChangeContent: function() {
         var cont = this.generateDistinctValue(this.content);
         this.updateContent(cont);
-
+    },
+    updateType: function(type, subtype) {
+        $(this.CSSid()).addClass(type);
+        $(this.CSSid()).attr('data-type', type);
+        if (typeof subtype != 'undefined') {
+            $(this.CSSid()).addClass(subtype);
+            $(this.CSSid()).attr('data-subtype', subtype);
+        }
     },
     updateContent: function(cont) {
         this.content = cont;
@@ -167,7 +163,9 @@ Cell.prototype = {
         var nbs = this.getNeighbours(), isN = false;
 
         for (var i = 0; i < nbs.length; i++) {
-            if (nbs[i] && nbs[i].content === cont)
+            if (nbs[i].content === cont
+                    && !nbs[i].isTank()
+                    && !nbs[i].isStone())
                 isN = nbs[i];
         }
 
@@ -181,12 +179,12 @@ Cell.prototype = {
     isStone: function() {
         if (!this.isCell())
             return false;
-        return this.type === 'stone';
+        return $(this.CSSid()).hasClass('stone');
     },
     isTank: function() {
         if (!this.isCell())
             return false;
-        return this.type === 'tank';
+        return $(this.CSSid()).hasClass('tank');
     },
     controlledMove: function() {
         var self = this;
@@ -210,53 +208,65 @@ Cell.prototype = {
             }
         });
     },
-    moveToCell: function(targetCell) {
-        $(this.CSSid()).removeClass(this.type + ' ' + this.subtype);
-        $(targetCell.CSSid()).addClass(this.type + ' ' + this.subtype);
-        this.content = targetCell.content;
-        this.X = targetCell.X;
-        this.Y = targetCell.Y;
-    },
     timerMove: function() {
         var self = this;
         this.timer = setInterval(function() {
             self.randomMove();
         }, 1000);
     },
+    stopTimer: function() {
+        clearInterval(this.timer);
+    },
     randomMove: function() {
         var nbs = this.getNeighbours();
-        var newCell = getRandElem(nbs);
 
-        while (newCell.isStone() ||
-                newCell.isTank()) {
-            newCell = getRandElem(nbs);
+        // if there are some neighbours
+        if ((nbs.length > 1) || (nbs.length === 1 && !nbs[0].isTank())) {
+            var newCell = getRandElem(nbs);
+
+            while (newCell.isStone() ||
+                    newCell.isTank()) {
+                newCell = getRandElem(nbs);
+            }
+
+            this.moveToCell(newCell);
+
         }
+    },
+    moveToCell: function(targetCell) {
+        var _type = $(this.CSSid()).attr('data-type'),
+                _subtype = $(this.CSSid()).attr('data-subtype');
 
-        this.moveToCell(newCell);
+        $(this.CSSid()).removeClass(_type).removeClass(_subtype);
+        targetCell.updateType(_type, _subtype);
+        this.updateType('', '');
+        this.content = targetCell.content;
+        this.X = targetCell.X;
+        this.Y = targetCell.Y;
     },
     getDirrection: function(targetCell) {
-        if (this.X == targetCell.X) {
-            if (this.Y == targetCell.Y - 1)
+        if (this.X === targetCell.X) {
+            if (this.Y === targetCell.Y - 1)
                 return 'r';
-            else if (this.Y == targetCell.Y + 1)
+            else if (this.Y === targetCell.Y + 1)
                 return 'l';
 
-        } else if (this.Y == targetCell.Y) {
-            if (this.X == targetCell.X - 1)
+        } else if (this.Y === targetCell.Y) {
+            if (this.X === targetCell.X - 1)
                 return 'd';
-            else if (this.X == targetCell.X + 1)
+            else if (this.X === targetCell.X + 1)
                 return 'u';
         }
     }
 };
 
-var Game = function(options) {
-    this.init(options);
+var Game = function(field) {
+    this.field = field;
+    this.init();
 };
 Game.prototype = {
     constructor: Game,
-    init: function(field) {
-        this.field = field;
+    init: function() {
         this.field.displayGrid();
         _d('Field displayed');
         this.field.populateGrid();
@@ -271,7 +281,6 @@ Game.prototype = {
 
         this.enemies = new Array();
         this.enemies[0] = this.field.addTank('enemy');
-        _d(this.enemies[0].prop);
         _d('Enemy created');
         this.enemies[0].timerMove();
         _d('My enemy is moving');
