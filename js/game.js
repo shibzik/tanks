@@ -25,14 +25,6 @@ Field.prototype = {
             }
         }
     },
-    displayGrid: function() {
-        for (var i = 0; i < this.W; i++) {
-            $(this.container).append('<div class="row" id="row' + i + '"></div>');
-            for (var j = 0; j < this.H; j++) {
-                $('#row' + i).append("<div id='" + numToID(i, j) + "' class='cell col" + j + "'></div>");
-            }
-        }
-    },
     // populate cells with random numbers 1-26
     populateGrid: function() {
         for (var i = 0; i < this.W; i++) {
@@ -41,23 +33,31 @@ Field.prototype = {
             }
         }
     },
+    displayGrid: function() {
+        for (var i = 0; i < this.W; i++) {
+            $(this.container).append('<div class="row" id="row' + i + '"></div>');
+            for (var j = 0; j < this.H; j++) {
+                $('#row' + i).append("<div class='cell col" + j + "' data-coord='" + CoordToStr(i, j) + "'></div>");
+            }
+        }
+    },
     buildWall: function(args) {
         var coord;
         this.wall = new Array(args.nrStones);
         for (var i = 0; i < args.nrStones; i++) {
             coord = Cell.prototype.generateDistinctCoordinates(this.wall, this.W, this.H);
-            this.wall[i] = numToID(coord[0], coord[1]);
-            this.grid[coord[0]][coord[1]].turnToStone();
+            this.wall[i] = CoordToStr(coord.x, coord.y);
+            this.grid[coord.x][coord.y].turnToStone();
         }
     },
     addTank: function(tankType) {
         var coord = Cell.prototype.generateDistinctCoordinates(this.wall, this.W, this.H);
-        if (!this.grid[coord[0]][coord[1]].isTank())
-            this.grid[coord[0]][coord[1]].turnToTank(tankType);
+        if (!this.grid[coord.x][coord.y].isTank())
+            this.grid[coord.x][coord.y].turnToTank(tankType);
         else
             this.addTank(tankType);
 
-        return this.grid[coord[0]][coord[1]];
+        return this.grid[coord.x][coord.y];
     }
 };
 
@@ -73,55 +73,56 @@ var Cell = function(args) {
     };
     args = $.extend({}, _defaults, args);
 
+    this.field = args.field;
     this.X = args.X;
     this.Y = args.Y;
+    if (this.X == -1 || this.Y == -1) {
+        this.X = getRandInt(0, this.field.W);
+        this.Y = getRandInt(0, this.field.H);
+    }
     this.content = args.content;
     this.type = args.type;
     this.subtype = args.subtype;
-    this.field = args.field;
-
-    this.create();
 };
 
 Cell.prototype = {
     constructor: Cell,
-    create: function() {
-        if (this.X == -1 || this.Y == -1) {
-            this.X = Math.floor((Math.random() * (this.field.W - 1)));
-            this.Y = Math.floor((Math.random() * (this.field.H - 1)));
-        }
-
-        this.ID = numToID(this.X, this.Y);
-    },
     turnToStone: function() {
         if (!this.isStone()) {
             this.type = 'stone';
-            this.content = '';
-            $('#' + this.ID).addClass('stone').text('');
+            this.updateContent('');
+            $(this.CSSid()).addClass('stone');
         }
     },
     turnToTank: function(tankType) {
         if (!this.isTank()) {
             this.type = 'tank';
-            $('#' + this.ID).addClass('tank');
+            $(this.CSSid()).addClass('tank');
             if (typeof tankType != 'undefined' && tankType != '') {
-                $('#' + this.ID).addClass(tankType);
+                $(this.CSSid()).addClass(tankType);
                 this.subtype = tankType;
             }
         }
     },
-    randomlyChangeContent: function(content) {
-        this.content = this.generateDistinctValue(this.content);
+    CSSid: function() {
+        return '#row' + this.X + ' .col' + this.Y;
+    },
+    randomlyChangeContent: function() {
+        var cont = this.generateDistinctValue(this.content);
+        this.updateContent(cont);
 
-        if (typeof content == 'undefined')
-            content = this.content;
-
-        $('#' + this.ID).text(numToChar(content));
-
-        this.field[this.X][this.Y].content = this.content;
+    },
+    updateContent: function(cont) {
+        this.content = cont;
+        // change the value on display
+        $(this.CSSid()).text(numToChar(cont));
+        $(this.CSSid()).attr('data-content', numToChar(cont));
+        $(this.CSSid()).attr('data-ascii', cont);
+        // change the value in the grid
+        this.field[this.X][this.Y].content = cont;
     },
     generateDistinctValue: function(a) {
-        var val = Math.floor((Math.random() * 26) + 97);
+        var val = getRandInt(97, 122);
 
         if (this.isNeighbour(val) || (typeof a != 'undefined' && val == a)) {
             val = this.generateDistinctValue();
@@ -130,17 +131,15 @@ Cell.prototype = {
         return val;
     },
     generateDistinctCoordinates: function(arrCoord, maxX, maxY) {
-        var x, y, newCoord;
-        x = Math.floor((Math.random() * (maxX - 1)));
-        y = Math.floor((Math.random() * (maxY - 1)));
-        newCoord = numToID(x, y);
+        var x = getRandInt(0, maxX - 1), y = getRandInt(0, maxY - 1), newCoord;
+        newCoord = CoordToStr(x, y);
 
         if (inArray(arrCoord, newCoord)) {
             newCoord = Cell.prototype.generateDistinctCoordinates(arrCoord, maxX, maxY);
             return newCoord;
         }
 
-        return IDtoNum(newCoord);
+        return StrToCoord(newCoord);
     },
     getNeighbours: function() {
         var arr = new Array(), i = 0, X = this.X, Y = this.Y, field = this.field;
@@ -168,7 +167,7 @@ Cell.prototype = {
         var nbs = this.getNeighbours(), isN = false;
 
         for (var i = 0; i < nbs.length; i++) {
-            if (nbs[i] && nbs[i].content == cont)
+            if (nbs[i] && nbs[i].content === cont)
                 isN = nbs[i];
         }
 
@@ -182,49 +181,47 @@ Cell.prototype = {
     isStone: function() {
         if (!this.isCell())
             return false;
-        return this.type == 'stone';
+        return this.type === 'stone';
     },
     isTank: function() {
         if (!this.isCell())
             return false;
-        return this.type == 'tank';
+        return this.type === 'tank';
     },
     controlledMove: function() {
-        var $this = this;
+        var self = this;
         $("body").bind("keypress", function(e) {
-            var nb = $this.isNeighbour(e.keyCode);
+            var nb = self.isNeighbour(e.charCode);
 
             if (nb) {
-                var direction = $this.getDirrection(nb);
+                var direction = self.getDirrection(nb);
                 if (direction === 'u') {
-                    $('#' + nb.ID).text("^");
+                    $(nb.CSSid()).text("^");
                 } else if (direction === 'r') {
-                    $('#' + nb.ID).text(">");
+                    $(nb.CSSid()).text(">");
                 } else if (direction === 'd') {
-                    $('#' + nb.ID).text("v");
+                    $(nb.CSSid()).text("v");
                 } else if (direction === 'l') {
-                    $('#' + nb.ID).text("<");
+                    $(nb.CSSid()).text("<");
                 }
 
-                $this.randomlyChangeContent();
-                $this.moveToCell(nb);
+                self.randomlyChangeContent();
+                self.moveToCell(nb);
             }
         });
     },
     moveToCell: function(targetCell) {
-        $('#' + this.ID).removeClass(this.type + ' ' + this.subtype);
-        $('#' + targetCell.ID).addClass(this.type + ' ' + this.subtype);
+        $(this.CSSid()).removeClass(this.type + ' ' + this.subtype);
+        $(targetCell.CSSid()).addClass(this.type + ' ' + this.subtype);
         this.content = targetCell.content;
-        this.ID = targetCell.ID;
         this.X = targetCell.X;
         this.Y = targetCell.Y;
     },
     timerMove: function() {
-        var $this = this;
+        var self = this;
         this.timer = setInterval(function() {
-            $this.randomMove();
+            self.randomMove();
         }, 1000);
-        this.ID = $this.ID;
     },
     randomMove: function() {
         var nbs = this.getNeighbours();
@@ -268,7 +265,6 @@ Game.prototype = {
         _d('Wall built');
 
         this.myTank = this.field.addTank('friend');
-        _d(this.myTank.prop);
         _d('My tank created');
         this.myTank.controlledMove();
         _d('My tank is moving');
@@ -283,7 +279,6 @@ Game.prototype = {
     addEnemy: function() {
         var nrEnemies = this.enemies.length;
         this.enemies[nrEnemies] = this.field.addTank('enemy');
-        _d(this.enemies[nrEnemies].prop);
         _d('New enemy created');
         this.enemies[nrEnemies].timerMove();
         _d('The new enemy is moving');

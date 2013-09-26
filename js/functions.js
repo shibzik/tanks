@@ -4,30 +4,22 @@ function _d(msg) {
 }
 
 // transform 2 numbers in cell ID
-function numToID(x, y) {
-    var xstr = '';
-    var ystr = '';
-    xstr = x.toString();
-    ystr = y.toString();
-    if (x < 10) {
+function CoordToStr(x, y) {
+    var xstr = x.toString(), ystr = y.toString();
+    if (xstr.length == 1)
         xstr = '0' + xstr;
-    }
-    if (y < 10) {
+
+    if (ystr.length == 1)
         ystr = '0' + ystr;
-    }
-    xstr = 'x' + xstr;
-    ystr = 'y' + ystr;
-    return (xstr + ystr);
+
+    return 'x' + xstr + 'y' + ystr;
 }
 // return 2 number coodinates from cell ID
-function IDtoNum(ID) {
-    var coord = [0, 0];
-    if (ID.substring(0, 1) == '#')
-        ID = ID.substring(1, ID.length);
-
-    coord[0] = parseInt(ID.substring(2, 4));
-    coord[1] = parseInt(ID.substring(5, 7));
-    return(coord);
+function StrToCoord(ID) {
+    var coord = new Array(2);
+    ID = ID.substring(1, ID.length);
+    coord = ID.split('y');
+    return {x: parseInt(coord[0]), y: parseInt(coord[1])};
 }
 // return char A-Z according to num value 97-122
 function numToChar(val) {
@@ -166,6 +158,10 @@ function inArray(arr, el) {
     }
 
     return isInArray;
+}
+
+function getRandInt(min, max) {
+    return min + Math.floor(Math.random() * (max - min + 1));
 }
 
 function getRandElem(arr) {
