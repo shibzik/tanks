@@ -1,38 +1,42 @@
-var X = Y = 10;
+"use strict";
 
-var Field = function(options) {
-    this.create(options);
+var Field = function(args) {
+    var _defaults = {
+        container: '#field',
+        width: 10,
+        height: 10
+    };
+    args = $.extend({}, _defaults, args);
+    this.container = args.container;
+    this.W = args.width;
+    this.H = args.height;
+    this.createGrid();
 };
 
 Field.prototype = {
     constructor: Field,
-    prop: {
-        container: '#field',
-        width: 10,
-        height: 10
-    },
-    create: function(options) {
-        this.prop = $.extend({}, this.prop, options);
-        this.grid = createArray(this.prop.width, this.prop.height);
-        for (var i = 0; i < this.prop.width; i++) {
-            $(this.prop.container).append('<div class="row" id="row' + i + '"></div>');
-            for (var j = 0; j < this.prop.height; j++) {
-                this.grid[i][j] = new Cell({X: i, Y: j});
-                this.grid[i][j].addOnField(this.grid);
-                $('#row' + i).append(this.grid[i][j].createHtml());
+    createGrid: function() {
+        this.grid = createArray(this.W, this.H);
+
+        // and fulfill this grid with cells
+        for (var i = 0; i < this.W; i++) {
+            for (var j = 0; j < this.H; j++) {
+                this.grid[i][j] = new Cell({X: i, Y: j, field: this.grid});
             }
         }
     },
-    getGrid: function() {
-        return this.grid;
+    displayGrid: function() {
+        for (var i = 0; i < this.W; i++) {
+            $(this.container).append('<div class="row" id="row' + i + '"></div>');
+            for (var j = 0; j < this.H; j++) {
+                $('#row' + i).append("<div id='" + numToID(i, j) + "' class='cell col" + j + "'></div>");
+            }
+        }
     },
-    updateGridCell: function(x, y, cellVal) {
-
-    },
-    // generate field X:Y with random numbers 1-26
-    populate: function() {
-        for (var i = 0; i < this.prop.width; i++) {
-            for (var j = 0; j < this.prop.height; j++) {
+    // populate cells with random numbers 1-26
+    populateGrid: function() {
+        for (var i = 0; i < this.W; i++) {
+            for (var j = 0; j < this.H; j++) {
                 this.grid[i][j].randomlyChangeContent();
             }
         }
@@ -41,13 +45,13 @@ Field.prototype = {
         var coord;
         this.wall = new Array(args.nrStones);
         for (var i = 0; i < args.nrStones; i++) {
-            coord = Cell.prototype.generateDistinctCoordinates(this.wall);
+            coord = Cell.prototype.generateDistinctCoordinates(this.wall, this.W, this.H);
             this.wall[i] = numToID(coord[0], coord[1]);
             this.grid[coord[0]][coord[1]].turnToStone();
         }
     },
     addTank: function(tankType) {
-        var coord = Cell.prototype.generateDistinctCoordinates(this.wall);
+        var coord = Cell.prototype.generateDistinctCoordinates(this.wall, this.W, this.H);
         if (!this.grid[coord[0]][coord[1]].isTank())
             this.grid[coord[0]][coord[1]].turnToTank(tankType);
         else
@@ -57,59 +61,64 @@ Field.prototype = {
     }
 };
 
-var Cell = function(options) {
-    this.create(options);
+var Cell = function(args) {
+    // a cell is determined by a field and its 2 coordinates on that field
+    var _defaults = {
+        X: -1,
+        Y: -1,
+        content: '',
+        type: '',
+        subtype: '',
+        field: null
+    };
+    args = $.extend({}, _defaults, args);
+
+    this.X = args.X;
+    this.Y = args.Y;
+    this.content = args.content;
+    this.type = args.type;
+    this.subtype = args.subtype;
+    this.field = args.field;
+
+    this.create();
 };
 
 Cell.prototype = {
     constructor: Cell,
-    prop: {X: -1, Y: -1, content: '', ID: '', type: '', subtype: '', field: null},
-    create: function(options) {
-        this.prop = $.extend({}, this.prop, options);
-
-        if (this.prop.X == -1 || this.prop.Y == -1) {
-            this.prop.X = Math.floor((Math.random() * (X - 1)));
-            this.prop.Y = Math.floor((Math.random() * (Y - 1)));
+    create: function() {
+        if (this.X == -1 || this.Y == -1) {
+            this.X = Math.floor((Math.random() * (this.field.W - 1)));
+            this.Y = Math.floor((Math.random() * (this.field.H - 1)));
         }
 
-        this.prop.ID = numToID(this.prop.X, this.prop.Y);
-    },
-    addOnField: function(field) {
-        this.prop.field = field;
-        if (typeof field[this.prop.X][this.prop.Y].prop.type != 'undefined' && field[this.prop.X][this.prop.Y].prop.type != this.prop.type) {
-            this.create({type: this.prop.type});
-            this.addOnField(field);
-        }
+        this.ID = numToID(this.X, this.Y);
     },
     turnToStone: function() {
         if (!this.isStone()) {
-            this.prop.type = 'stone';
-            this.prop.content = '';
-            $('#' + this.prop.ID).addClass('stone').text('');
+            this.type = 'stone';
+            this.content = '';
+            $('#' + this.ID).addClass('stone').text('');
         }
     },
     turnToTank: function(tankType) {
         if (!this.isTank()) {
-            this.prop.type = 'tank';
-            $('#' + this.prop.ID).addClass('tank');
+            this.type = 'tank';
+            $('#' + this.ID).addClass('tank');
             if (typeof tankType != 'undefined' && tankType != '') {
-                $('#' + this.prop.ID).addClass(tankType);
-                this.prop.subtype = tankType;
+                $('#' + this.ID).addClass(tankType);
+                this.subtype = tankType;
             }
         }
     },
-    createHtml: function() {
-        return "<div id='" + this.prop.ID + "' class='cell col" + this.prop.Y + "'></div>";
-    },
     randomlyChangeContent: function(content) {
-        this.prop.content = this.generateDistinctValue(this.prop.content);
+        this.content = this.generateDistinctValue(this.content);
 
         if (typeof content == 'undefined')
-            content = this.prop.content;
+            content = this.content;
 
-        $('#' + this.prop.ID).text(numToChar(content));
+        $('#' + this.ID).text(numToChar(content));
 
-        this.prop.field[this.prop.X][this.prop.Y].prop.content = this.prop.content;
+        this.field[this.X][this.Y].content = this.content;
     },
     generateDistinctValue: function(a) {
         var val = Math.floor((Math.random() * 26) + 97);
@@ -120,21 +129,21 @@ Cell.prototype = {
 
         return val;
     },
-    generateDistinctCoordinates: function(arrCoord) {
+    generateDistinctCoordinates: function(arrCoord, maxX, maxY) {
         var x, y, newCoord;
-        x = Math.floor((Math.random() * (X - 1)));
-        y = Math.floor((Math.random() * (Y - 1)));
+        x = Math.floor((Math.random() * (maxX - 1)));
+        y = Math.floor((Math.random() * (maxY - 1)));
         newCoord = numToID(x, y);
 
         if (inArray(arrCoord, newCoord)) {
-            newCoord = this.generateDistinctCoordinates(arrCoord);
+            newCoord = Cell.prototype.generateDistinctCoordinates(arrCoord, maxX, maxY);
             return newCoord;
         }
 
         return IDtoNum(newCoord);
     },
     getNeighbours: function() {
-        var arr = new Array(), i = 0, X = this.prop.X, Y = this.prop.Y, field = this.prop.field;
+        var arr = new Array(), i = 0, X = this.X, Y = this.Y, field = this.field;
 
         if (typeof field[X - 1] != 'undefined') {
             arr[i] = field[X - 1][Y];
@@ -159,7 +168,7 @@ Cell.prototype = {
         var nbs = this.getNeighbours(), isN = false;
 
         for (var i = 0; i < nbs.length; i++) {
-            if (nbs[i] && nbs[i].prop.content == cont)
+            if (nbs[i] && nbs[i].content == cont)
                 isN = nbs[i];
         }
 
@@ -173,12 +182,12 @@ Cell.prototype = {
     isStone: function() {
         if (!this.isCell())
             return false;
-        return this.prop.type == 'stone';
+        return this.type == 'stone';
     },
     isTank: function() {
         if (!this.isCell())
             return false;
-        return this.prop.type == 'tank';
+        return this.type == 'tank';
     },
     controlledMove: function() {
         var $this = this;
@@ -188,13 +197,13 @@ Cell.prototype = {
             if (nb) {
                 var direction = $this.getDirrection(nb);
                 if (direction === 'u') {
-                    $('#' + nb.prop.ID).text("^");
+                    $('#' + nb.ID).text("^");
                 } else if (direction === 'r') {
-                    $('#' + nb.prop.ID).text(">");
+                    $('#' + nb.ID).text(">");
                 } else if (direction === 'd') {
-                    $('#' + nb.prop.ID).text("v");
+                    $('#' + nb.ID).text("v");
                 } else if (direction === 'l') {
-                    $('#' + nb.prop.ID).text("<");
+                    $('#' + nb.ID).text("<");
                 }
 
                 $this.randomlyChangeContent();
@@ -203,19 +212,19 @@ Cell.prototype = {
         });
     },
     moveToCell: function(targetCell) {
-        $('#' + this.prop.ID).removeClass(this.prop.type + ' ' + this.prop.subtype);
-        $('#' + targetCell.prop.ID).addClass(this.prop.type + ' ' + this.prop.subtype);
-        this.prop.content = targetCell.prop.content;
-        this.prop.ID = targetCell.prop.ID;
-        this.prop.X = targetCell.prop.X;
-        this.prop.Y = targetCell.prop.Y;
+        $('#' + this.ID).removeClass(this.type + ' ' + this.subtype);
+        $('#' + targetCell.ID).addClass(this.type + ' ' + this.subtype);
+        this.content = targetCell.content;
+        this.ID = targetCell.ID;
+        this.X = targetCell.X;
+        this.Y = targetCell.Y;
     },
     timerMove: function() {
         var $this = this;
         this.timer = setInterval(function() {
             $this.randomMove();
         }, 1000);
-        this.prop.ID = $this.prop.ID;
+        this.ID = $this.ID;
     },
     randomMove: function() {
         var nbs = this.getNeighbours();
@@ -229,16 +238,16 @@ Cell.prototype = {
         this.moveToCell(newCell);
     },
     getDirrection: function(targetCell) {
-        if (this.prop.X == targetCell.prop.X) {
-            if (this.prop.Y == targetCell.prop.Y - 1)
+        if (this.X == targetCell.X) {
+            if (this.Y == targetCell.Y - 1)
                 return 'r';
-            else if (this.prop.Y == targetCell.prop.Y + 1)
+            else if (this.Y == targetCell.Y + 1)
                 return 'l';
 
-        } else if (this.prop.Y == targetCell.prop.Y) {
-            if (this.prop.X == targetCell.prop.X - 1)
+        } else if (this.Y == targetCell.Y) {
+            if (this.X == targetCell.X - 1)
                 return 'd';
-            else if (this.prop.X == targetCell.prop.X + 1)
+            else if (this.X == targetCell.X + 1)
                 return 'u';
         }
     }
@@ -249,36 +258,39 @@ var Game = function(options) {
 };
 Game.prototype = {
     constructor: Game,
-    init: function(field, options) {
+    init: function(field) {
         this.field = field;
-        console.log('Field created');
-        this.field.populate();
-        console.log('Field populated');
+        this.field.displayGrid();
+        _d('Field displayed');
+        this.field.populateGrid();
+        _d('Field populated');
         this.field.buildWall({nrStones: 30});
-        console.log('Wall built');
+        _d('Wall built');
 
         this.myTank = this.field.addTank('friend');
-        console.log(this.myTank.prop);
-        console.log('My tank created');
+        _d(this.myTank.prop);
+        _d('My tank created');
         this.myTank.controlledMove();
-        console.log('My tank is moving');
+        _d('My tank is moving');
 
         this.enemies = new Array();
         this.enemies[0] = this.field.addTank('enemy');
-        console.log(this.enemies[0].prop);
-        console.log('Enemy created');
+        _d(this.enemies[0].prop);
+        _d('Enemy created');
         this.enemies[0].timerMove();
-        console.log('My enemy is moving');
+        _d('My enemy is moving');
     },
     addEnemy: function() {
         var nrEnemies = this.enemies.length;
         this.enemies[nrEnemies] = this.field.addTank('enemy');
-        console.log(this.enemies[nrEnemies].prop);
-        console.log('New enemy created');
+        _d(this.enemies[nrEnemies].prop);
+        _d('New enemy created');
         this.enemies[nrEnemies].timerMove();
-        console.log('The new enemy is moving');
+        _d('The new enemy is moving');
     }
 };
+
+var Debug = true;
 
 $(document).ready(function() {
     var game = new Game(new Field());

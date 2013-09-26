@@ -1,3 +1,7 @@
+function _d(msg) {
+    if (typeof Debug != undefined && Debug == true)
+        console.log(msg);
+}
 
 // transform 2 numbers in cell ID
 function numToID(x, y) {
