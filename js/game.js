@@ -66,13 +66,15 @@ var Cell = function(args) {
         X: -1,
         Y: -1,
         content: '',
-        field: null
+        field: null,
+        speed: 2000
     };
     args = $.extend({}, _defaults, args);
 
     this.field = args.field;
     this.X = args.X;
     this.Y = args.Y;
+    this.speed = args.speed;
     if (this.X === -1 || this.Y === -1) {
         this.X = getRandInt(0, this.field.W);
         this.Y = getRandInt(0, this.field.H);
@@ -139,6 +141,8 @@ Cell.prototype = {
     },
     getNeighbours: function(directNeighbours, cleanNeighbours) {
         var arr = new Array(), index = 0, X = this.X, Y = this.Y, field = this.field;
+        if (typeof cleanNeighbours == 'undefined')
+            var cleanNeighbours = false;
 
         for (var i = -1; i <= 1; i++) {
             for (var j = -1; j <= 1; j++) {
@@ -147,24 +151,15 @@ Cell.prototype = {
                         continue;
                 }
                 if (typeof field[X + i] != 'undefined' && typeof field[X + i][Y + j] != 'undefined') {
+                    if (cleanNeighbours) {
+                        if (field[X + i][Y + j].isStone() || field[X + i][Y + j].isTank())
+                            continue;
+                    }
                     arr[index] = field[X + i][Y + j];
                     index++;
                 }
             }
         }
-
-        if (typeof cleanNeighbours != 'undefined' && cleanNeighbours) {
-            arr = this.cleanNeighbours(arr);
-        }
-
-        return arr;
-    },
-    cleanNeighbours: function(arr) {
-        $.each(arr, function(index, item) {
-            if (typeof item != 'undefined' && (item.isTank() || item.isStone())) {
-                arr.splice(index, 1);
-            }
-        });
 
         return arr;
     },
@@ -209,7 +204,7 @@ Cell.prototype = {
         var self = this;
         this.timer = setInterval(function() {
             self.randomMove();
-        }, 1000);
+        }, this.speed);
     },
     stopTimer: function() {
         clearInterval(this.timer);
