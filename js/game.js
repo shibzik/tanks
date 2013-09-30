@@ -137,7 +137,7 @@ Cell.prototype = {
 
         return StrToCoord(newCoord);
     },
-    getNeighbours: function() {
+    getNeighbours: function(eliminateTanks, eliminateStones) {
         var arr = new Array(), i = 0, X = this.X, Y = this.Y, field = this.field;
 
         if (typeof field[X - 1] != 'undefined') {
@@ -157,17 +157,43 @@ Cell.prototype = {
             i++;
         }
 
+        if (typeof eliminateTanks != 'undefined' && eliminateTanks) {
+            this.eliminateTanks(arr);
+        }
+
+        if (typeof eliminateStones != 'undefined' && eliminateStones) {
+            this.eliminateStones(arr);
+        }
+
+        return arr;
+    },
+    eliminateTanks: function(arr) {
+        $.each(arr, function(index, item) {
+            if (typeof item != 'undefined' && item.isTank()) {
+                arr.splice(index, 1);
+            }
+        });
+
+        return arr;
+    },
+    eliminateStones: function(arr) {
+        $.each(arr, function(index, item) {
+            if (typeof item != 'undefined' && item.isStone()) {
+                arr.splice(index, 1);
+            }
+        });
+
         return arr;
     },
     isNeighbour: function(cont) {
         var nbs = this.getNeighbours(), isN = false;
 
-        for (var i = 0; i < nbs.length; i++) {
-            if (nbs[i].content === cont
-                    && !nbs[i].isTank()
-                    && !nbs[i].isStone())
-                isN = nbs[i];
-        }
+        $.each(nbs, function(index, nb) {
+            if (nb.content === cont
+                    && !nb.isTank()
+                    && !nb.isStone())
+                isN = nb;
+        });
 
         return isN;
     },
@@ -218,19 +244,11 @@ Cell.prototype = {
         clearInterval(this.timer);
     },
     randomMove: function() {
-        var nbs = this.getNeighbours();
+        var nbs = this.getNeighbours(true, true);
 
         // if there are some neighbours
-        if ((nbs.length > 1) || (nbs.length === 1 && !nbs[0].isTank())) {
-            var newCell = getRandElem(nbs);
-
-            while (newCell.isStone() ||
-                    newCell.isTank()) {
-                newCell = getRandElem(nbs);
-            }
-
-            this.moveToCell(newCell);
-
+        if (nbs.length > 0) {
+            this.moveToCell(getRandElem(nbs));
         }
     },
     moveToCell: function(targetCell) {
