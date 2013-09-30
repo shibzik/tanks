@@ -197,10 +197,8 @@ Cell.prototype = {
 
         return isN;
     },
-    isCell: function(obj) {
-        if (typeof obj == 'undefined')
-            obj = this;
-        return obj instanceof Cell;
+    isCell: function() {
+        return this instanceof Cell;
     },
     isStone: function() {
         if (!this.isCell())
@@ -218,17 +216,7 @@ Cell.prototype = {
             var nb = self.isNeighbour(e.charCode);
 
             if (nb) {
-                var direction = self.getDirrection(nb);
-                if (direction === 'u') {
-                    $(nb.CSSid()).text("^");
-                } else if (direction === 'r') {
-                    $(nb.CSSid()).text(">");
-                } else if (direction === 'd') {
-                    $(nb.CSSid()).text("v");
-                } else if (direction === 'l') {
-                    $(nb.CSSid()).text("<");
-                }
-
+                $(nb.CSSid()).html(self.getDirrection(nb, true));
                 self.randomlyChangeContent();
                 self.moveToCell(nb);
             }
@@ -262,19 +250,27 @@ Cell.prototype = {
         this.X = targetCell.X;
         this.Y = targetCell.Y;
     },
-    getDirrection: function(targetCell) {
+    getDirrection: function(targetCell, returnArrow) {
+        var dir;
         if (this.X === targetCell.X) {
-            if (this.Y === targetCell.Y - 1)
-                return 'r';
-            else if (this.Y === targetCell.Y + 1)
-                return 'l';
+            if (this.Y === targetCell.Y - 1) {
+                dir = 'r';
+            }
+            else if (this.Y === targetCell.Y + 1) {
+                dir = 'l';
+            }
 
         } else if (this.Y === targetCell.Y) {
-            if (this.X === targetCell.X - 1)
-                return 'd';
-            else if (this.X === targetCell.X + 1)
-                return 'u';
+            if (this.X === targetCell.X - 1) {
+                dir = 'd';
+            }
+            else if (this.X === targetCell.X + 1) {
+                dir = 'u';
+            }
         }
+        if (returnArrow)
+            return '&' + dir + 'arr;';
+        return dir;
     }
 };
 
