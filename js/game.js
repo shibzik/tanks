@@ -137,56 +137,39 @@ Cell.prototype = {
 
         return StrToCoord(newCoord);
     },
-    getNeighbours: function(eliminateTanks, eliminateStones) {
-        var arr = new Array(), i = 0, X = this.X, Y = this.Y, field = this.field;
+    getNeighbours: function(directNeighbours, cleanNeighbours) {
+        var arr = new Array(), index = 0, X = this.X, Y = this.Y, field = this.field;
 
-        if (typeof field[X - 1] != 'undefined') {
-            arr[i] = field[X - 1][Y];
-            i++;
-        }
-        if (typeof field[X][Y - 1] != 'undefined') {
-            arr[i] = field[X][Y - 1];
-            i++;
-        }
-        if (typeof field[X + 1] != 'undefined') {
-            arr[i] = field[X + 1][Y];
-            i++;
-        }
-        if (typeof field[X][Y + 1] != 'undefined') {
-            arr[i] = field[X][Y + 1];
-            i++;
+        for (var i = -1; i <= 1; i++) {
+            for (var j = -1; j <= 1; j++) {
+                if (typeof directNeighbours != 'undefined' && directNeighbours) {
+                    if (Math.abs(i + j) !== 1)
+                        continue;
+                }
+                if (typeof field[X + i] != 'undefined' && typeof field[X + i][Y + j] != 'undefined') {
+                    arr[index] = field[X + i][Y + j];
+                    index++;
+                }
+            }
         }
 
-        if (typeof eliminateTanks != 'undefined' && eliminateTanks) {
-            this.eliminateTanks(arr);
-        }
-
-        if (typeof eliminateStones != 'undefined' && eliminateStones) {
-            this.eliminateStones(arr);
+        if (typeof cleanNeighbours != 'undefined' && cleanNeighbours) {
+            arr = this.cleanNeighbours(arr);
         }
 
         return arr;
     },
-    eliminateTanks: function(arr) {
+    cleanNeighbours: function(arr) {
         $.each(arr, function(index, item) {
-            if (typeof item != 'undefined' && item.isTank()) {
+            if (typeof item != 'undefined' && (item.isTank() || item.isStone())) {
                 arr.splice(index, 1);
             }
         });
 
         return arr;
     },
-    eliminateStones: function(arr) {
-        $.each(arr, function(index, item) {
-            if (typeof item != 'undefined' && item.isStone()) {
-                arr.splice(index, 1);
-            }
-        });
-
-        return arr;
-    },
-    isNeighbour: function(cont) {
-        var nbs = this.getNeighbours(), isN = false;
+    isNeighbour: function(cont, direct) {
+        var nbs = this.getNeighbours(direct), isN = false;
 
         $.each(nbs, function(index, nb) {
             if (nb.content === cont
@@ -213,7 +196,7 @@ Cell.prototype = {
     controlledMove: function() {
         var self = this;
         $("body").bind("keypress", function(e) {
-            var nb = self.isNeighbour(e.charCode);
+            var nb = self.isNeighbour(e.charCode, true);
 
             if (nb) {
                 $(nb.CSSid()).html(self.getDirrection(nb, true));
@@ -232,6 +215,7 @@ Cell.prototype = {
         clearInterval(this.timer);
     },
     randomMove: function() {
+        // we need direct neighbours with no stones and tanks
         var nbs = this.getNeighbours(true, true);
 
         // if there are some neighbours
