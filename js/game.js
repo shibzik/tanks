@@ -139,22 +139,12 @@ Cell.prototype = {
 
         return StrToCoord(newCoord);
     },
-    getNeighbours: function(directNeighbours, cleanNeighbours) {
+    getNeighbours: function() {
         var arr = new Array(), index = 0, X = this.X, Y = this.Y, field = this.field;
-        if (typeof cleanNeighbours == 'undefined')
-            var cleanNeighbours = false;
 
-        for (var i = -1; i <= 1; i++) {
-            for (var j = -1; j <= 1; j++) {
-                if (typeof directNeighbours != 'undefined' && directNeighbours) {
-                    if (Math.abs(i + j) !== 1)
-                        continue;
-                }
+        for (var i = -2; i <= 2; i++) {
+            for (var j = -2; j <= 2; j++) {
                 if (typeof field[X + i] != 'undefined' && typeof field[X + i][Y + j] != 'undefined') {
-                    if (cleanNeighbours) {
-                        if (field[X + i][Y + j].isStone() || field[X + i][Y + j].isTank())
-                            continue;
-                    }
                     arr[index] = field[X + i][Y + j];
                     index++;
                 }
@@ -163,17 +153,41 @@ Cell.prototype = {
 
         return arr;
     },
+    getDirectNeighbours: function() {
+        var arr = new Array(), index = 0, X = this.X, Y = this.Y, field = this.field;
+
+        for (var i = -1; i <= 1; i++) {
+            for (var j = -1; j <= 1; j++) {
+                if (Math.abs(i + j) === 1
+                        && typeof field[X + i] != 'undefined'
+                        && typeof field[X + i][Y + j] != 'undefined'
+                        && !field[X + i][Y + j].isStone()
+                        && !field[X + i][Y + j].isTank()) {
+                    arr[index] = field[X + i][Y + j];
+                    index++;
+                }
+            }
+        }
+
+        return arr;
+
+    },
     isNeighbour: function(cont, direct) {
-        var nbs = this.getNeighbours(direct), isN = false;
+        var nbs, isN = false;
+        if (typeof direct != 'undefined' && direct)
+            nbs = this.getDirectNeighbours();
+        else
+            nbs = this.getNeighbours();
 
         $.each(nbs, function(index, nb) {
-            if (nb.content === cont
-                    && !nb.isTank()
-                    && !nb.isStone())
+            if (nb.content === cont)
                 isN = nb;
         });
 
         return isN;
+    },
+    isDirectNeighbour: function(cont) {
+        return this.isNeighbour(cont, true);
     },
     isCell: function() {
         return this instanceof Cell;
@@ -191,7 +205,7 @@ Cell.prototype = {
     controlledMove: function() {
         var self = this;
         $("body").bind("keypress", function(e) {
-            var nb = self.isNeighbour(e.charCode, true);
+            var nb = self.isDirectNeighbour(e.charCode);
 
             if (nb) {
                 $(nb.CSSid()).html(self.getDirrection(nb, true));
@@ -211,7 +225,7 @@ Cell.prototype = {
     },
     randomMove: function() {
         // we need direct neighbours with no stones and tanks
-        var nbs = this.getNeighbours(true, true);
+        var nbs = this.getDirectNeighbours();
 
         // if there are some neighbours
         if (nbs.length > 0) {
