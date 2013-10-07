@@ -224,6 +224,7 @@ Cell.prototype = {
                         else if (arrow == 41) { dir = 'l'};
         });
         
+        
         return '&' + dir + 'arr;';
     },
     timerMove: function() {
