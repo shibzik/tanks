@@ -205,27 +205,24 @@ Cell.prototype = {
     controlledMove: function() {
         var self = this;
         $("body").bind("keypress", function(e) {
-            var nb = self.isDirectNeighbour(e.charCode);
+            if ($.inArray(e.keyCode, [37, 38, 39, 40]) != -1) {
+                self.controlledTurn(e.keyCode);
+                return false;
+            } else {
+                var nb = self.isDirectNeighbour(e.charCode);
 
-            if (nb) {
-                $(nb.CSSid()).html(self.getDirrection(nb, true));
-                self.randomlyChangeContent();
-                self.moveToCell(nb);
-            } else { $(self.CSSid()).html(controlledTurn()) }
+                if (nb) {
+                    $(nb.CSSid()).html(self.getDirrection(nb, true));
+                    self.randomlyChangeContent();
+                    self.moveToCell(nb);
+                }
+            }
         });
     },
-    controlledTurn : function() {
-        var dir;
-        $("body").bind("keypress",function(e){
-            var arrow = e.charCode;
-               if (arrow == 38){dir = 'u'}
-                else if (arrow == 39) { dir = 'r' }
-                    else if (arrow == 40) { dir = 'd' }
-                        else if (arrow == 41) { dir = 'l'};
-        });
-        
-        
-        return '&' + dir + 'arr;';
+    controlledTurn: function(arrowCode) {
+        var dirs = ['d', 'l', 'u', 'r'];
+
+        $(this.CSSid()).html('&' + dirs[arrowCode % 4] + 'arr;');
     },
     timerMove: function() {
         var self = this;
