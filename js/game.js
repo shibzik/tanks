@@ -211,8 +211,20 @@ Cell.prototype = {
                 $(nb.CSSid()).html(self.getDirrection(nb, true));
                 self.randomlyChangeContent();
                 self.moveToCell(nb);
-            }
+            } else { $(self.CSSid()).html(controlledTurn()) }
         });
+    },
+    controlledTurn : function() {
+        var dir;
+        $("body").bind("keypress",function(e){
+            var arrow = e.charCode;
+               if (arrow == 38){dir = 'u'}
+                else if (arrow == 39) { dir = 'r' }
+                    else if (arrow == 40) { dir = 'd' }
+                        else if (arrow == 41) { dir = 'l'};
+        });
+        
+        return '&' + dir + 'arr;';
     },
     timerMove: function() {
         var self = this;
