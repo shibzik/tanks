@@ -1,5 +1,7 @@
 "use strict";
-
+var githubtest=function(){
+    var test='test';
+}
 var Field = function(args) {
     var _defaults = {
         container: '#field',
@@ -93,6 +95,11 @@ Cell.prototype = {
     turnToTank: function(tankType) {
         if (!this.isTank()) {
             this.updateType('tank', tankType);
+        }
+    },
+    turnToCannonShot: function() {
+        if (!this.isCannonShot()) {
+            this.updateType('canon-shot');
         }
     },
     CSSid: function() {
@@ -202,6 +209,14 @@ Cell.prototype = {
             return false;
         return $(this.CSSid()).hasClass('tank');
     },
+    isCannonShot: function() {
+        if(!this.isCell())
+            return false;
+        return $(this.CSSid()).hasClass('cannon-shot')
+    },
+    getArrowDir: function(){
+        
+    },
     controlledMove: function() {
         var self = this;
         $("body").bind("keypress", function(e) {
@@ -223,6 +238,10 @@ Cell.prototype = {
         var dirs = ['d', 'l', 'u', 'r'];
 
         $(this.CSSid()).html('&' + dirs[arrowCode % 4] + 'arr;');
+    },
+    canonShotMove: function(dir) {
+        var speedTimer=200;
+        
     },
     timerMove: function() {
         var self = this;
