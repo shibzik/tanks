@@ -113,14 +113,14 @@ Cell.prototype = {
     updateContent: function(cont) {
         this.content = cont;
         // change the value on display
-        $(this.CSSid()).text(numToChar(cont));
-        $(this.CSSid()).attr('data-content', numToChar(cont));
+        $(this.CSSid()).text(String.fromCharCode(cont));
+        $(this.CSSid()).attr('data-content', String.fromCharCode(cont));
         $(this.CSSid()).attr('data-ascii', cont);
         // change the value in the grid
         this.field[this.X][this.Y].content = cont;
     },
     generateDistinctValue: function(a) {
-        var val = getRandInt(97, 122);
+        var val = getRandInt(65, 90);
 
         if (this.isNeighbour(val) || (typeof a != 'undefined' && val == a)) {
             val = this.generateDistinctValue();
@@ -204,12 +204,12 @@ Cell.prototype = {
     },
     controlledMove: function() {
         var self = this;
-        $("body").bind("keypress", function(e) {
+        $("body").bind("keydown", function(e) {
             if ($.inArray(e.keyCode, [37, 38, 39, 40]) != -1) {
                 self.controlledTurn(e.keyCode);
                 return false;
             } else {
-                var nb = self.isDirectNeighbour(e.charCode);
+                var nb = self.isDirectNeighbour(e.keyCode);
 
                 if (nb) {
                     $(nb.CSSid()).html(self.getDirrection(nb, true));
