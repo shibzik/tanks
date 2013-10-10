@@ -110,9 +110,11 @@ Cell.prototype = {
         this.updateContent(cont);
     },
     updateType: function(type, subtype) {
+        this.type = type;
         $(this.CSSid()).addClass(type);
         $(this.CSSid()).attr('data-type', type);
         if (typeof subtype != 'undefined') {
+            this.subtype = subtype;
             $(this.CSSid()).addClass(subtype);
             $(this.CSSid()).attr('data-subtype', subtype);
         }
@@ -202,20 +204,12 @@ Cell.prototype = {
     isStone: function() {
         if (!this.isCell())
             return false;
-        return $(this.CSSid()).hasClass('stone');
+        return this.type == 'stone';
     },
     isTank: function() {
         if (!this.isCell())
             return false;
-        return $(this.CSSid()).hasClass('tank');
-    },
-    isCannonShot: function() {
-        if(!this.isCell())
-            return false;
-        return $(this.CSSid()).hasClass('cannon-shot')
-    },
-    getArrowDir: function(){
-        
+        return this.type == 'tank';
     },
     controlledMove: function() {
         var self = this;
@@ -237,6 +231,7 @@ Cell.prototype = {
     controlledTurn: function(arrowCode) {
         var dirs = ['d', 'l', 'u', 'r'];
 
+        this.direction = dirs[arrowCode % 4];
         $(this.CSSid()).html('&' + dirs[arrowCode % 4] + 'arr;');
     },
     timerMove: function() {
@@ -277,7 +272,6 @@ Cell.prototype = {
             else if (this.Y === targetCell.Y + 1) {
                 dir = 'l';
             }
-
         } else if (this.Y === targetCell.Y) {
             if (this.X === targetCell.X - 1) {
                 dir = 'd';
